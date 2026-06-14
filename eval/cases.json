@@ -1,0 +1,10 @@
+[
+  { "message": "Database connection lost", "expectedUrgency": "High", "expectedCategory": "Technical Problem" },
+  { "message": "Thank you so much! Your team has been incredibly helpful and I really appreciate the fast response to my question earlier today!", "expectedUrgency": "Low", "expectedCategory": "Positive Feedback" },
+  { "message": "Could you add an export to CSV feature? Would be really useful for my monthly reports.", "expectedUrgency": "Low", "expectedCategory": "Feature Request" },
+  { "message": "My payment failed and now I can't access the dashboard. Is there a bug or do I need to update my credit card?", "expectedUrgency": "High", "expectedCategory": "Billing Issue" },
+  { "message": "hi", "expectedUrgency": "Low", "expectedCategory": "General Inquiry" },
+  { "message": "Server down now", "expectedUrgency": "High", "expectedCategory": "Technical Problem" },
+  { "message": "Hi! I was just browsing your website and noticed the design is really nice! Just wanted to share positive feedback!", "expectedUrgency": "Low", "expectedCategory": "Positive Feedback" },
+  { "message": "What are your business hours?", "expectedUrgency": "Low", "expectedCategory": "General Inquiry" }
+]

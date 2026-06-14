@@ -1,33 +1,35 @@
-# Customer Inbox Triage App
+# Relay AI — Customer Inbox Triage
 
 ## Overview
 
-The Customer Inbox Triage app is a lightweight AI-powered tool that helps classify customer support messages and recommend actions. It uses Groq AI to categorize messages, applies rule-based urgency scoring, and suggests next steps based on predefined templates.
+Relay AI promises to *categorize, prioritize, and route* support messages. This app is a lightweight AI-powered triage tool for customer support teams. It uses a single schema-constrained Groq LLM call to classify messages, applies urgency-aware escalation and recommendation logic, and gives agents confidence scores with one-click override (human-in-the-loop).
 
 ## Problem Statement
 
-Support teams waste time manually reading and triaging customer messages. This tool provides an automated first pass at classification to help prioritize and route messages more efficiently.
+Support teams waste time manually reading and triaging customer messages. This tool provides an automated first pass at classification to help prioritize and route messages more efficiently — with transparency so agents can trust and correct the AI.
 
 ## Tech Stack
 
-- **Frontend**: React + Vite + Tailwind CSS
-- **AI**: Groq API (Llama 3.3 70B - Free tier)
-- **Runtime**: Browser-based (local development only)
+- **Frontend**: React 19 + Vite 7 + Tailwind CSS 3.4 + Framer Motion
+- **AI**: Groq API (Llama 3.3 70B — free tier), structured JSON output
+- **Routing**: React Router 7
+- **Persistence**: localStorage (dev/assessment scope)
+- **Eval**: Node eval harness (`npm run eval`)
 
 ## Setup Instructions
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
-- npm or yarn
-- Groq API key (FREE - get from https://console.groq.com)
+- Node.js 20.6+ (for `--env-file` in eval script)
+- npm
+- Groq API key (free — get from https://console.groq.com)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd "L2 assessment"
+   cd l2assessment--nr
    ```
 
 2. **Install dependencies**
@@ -36,85 +38,101 @@ Support teams waste time manually reading and triaging customer messages. This t
    ```
 
 3. **Configure Groq API Key**
-   
+
    Create a `.env.local` file in the root directory:
    ```bash
    cp .env.example .env.local
    ```
-   
+
    Edit `.env.local` and add your Groq API key:
    ```
    VITE_GROQ_API_KEY=gsk_your-actual-key-here
    ```
-   
-   Get your FREE API key from: https://console.groq.com/keys
-   
-   **Why Groq?** Groq offers a generous free tier with fast inference and no credit card required!
+
+   Get your free API key from: https://console.groq.com/keys
 
 4. **Run the application**
    ```bash
    npm run dev
    ```
-   
+
    The app will be available at `http://localhost:5173`
+
+5. **Run the eval harness**
+   ```bash
+   npm run eval
+   ```
 
 ## How It Works
 
 1. **Paste Message**: User pastes a customer support message into the text area
 2. **Analyze**: Click "Analyze Message" to process the input
-3. **Classification**: The app runs three processes in parallel:
-   - **Category Classification** (LLM): Uses Groq AI (Llama 3.3 70B) to categorize the message
-   - **Urgency Scoring** (Rule-based): Applies simple rules to determine urgency
-   - **Recommendation** (Template-based): Maps category to a recommended action
-4. **Display Results**: Shows category, urgency tag, recommended action, and AI reasoning
-5. **History**: All analyses are saved to localStorage and viewable in the History tab
+3. **Single Triage Call**: One structured LLM call returns category, urgency, confidence, reasoning, suggested reply, and tags
+4. **Recommendations**: Template-based actions are urgency-aware; high-urgency items trigger escalation
+5. **Human-in-the-Loop**: Agents can override category; corrections persist to history
+6. **History**: All analyses are saved to localStorage and viewable in the History tab
 
+## What I Changed and Why
+
+### 1. Structured-output triage engine
+
+**Before:** Free-form LLM prompt + string-matching (`content.includes('billing')`) and an inverted rule-based urgency scorer (short messages, ALL CAPS, and questions *lowered* urgency; every `!` added 30 points; clock-dependent weekend/time rules).
+
+**After:** Single `triageMessage()` call with `temperature: 0`, `response_format: { type: 'json_object' }`, and a shared system prompt in `src/utils/prompt.js`. Returns category, urgency, confidence, reasoning, suggested reply, and tags in one pass. Deterministic mock fallback when the API is unavailable.
+
+### 2. Confidence + agent override (human-in-the-loop)
+
+The Analyze page shows a confidence score with a visual bar, source badge (AI vs Offline), and a category override dropdown. When an agent corrects a label, `corrected: true` is set and the recommendation/escalation logic recomputes. This earns trust instead of hiding uncertainty.
+
+### 3. Fixed escalation and recommendation logic
+
+**Before:** Feature requests mapped to "check billing portal"; `getRecommendedAction` ignored urgency; `shouldEscalate` checked `message.length > 100` and was never called.
+
+**After:** Category-specific action templates, urgency-prefixed high-priority responses, and real escalation driven by urgency level and billing sensitivity.
+
+### 4. "Signal" design system redesign
+
+Replaced default blue Tailwind with a calm operations aesthetic:
+
+- **Brand accent:** iris `#5B57E8` only for branding; red/amber/green reserved for urgency semantics
+- **Typography:** Instrument Serif (display), Inter (UI), JetBrains Mono (tags/IDs)
+- **Surface:** warm paper `#FBFBF9`, soft card shadows, 16px radius
+- **Accessibility:** urgency tags always include icon + label (never color alone)
+- **Motion:** Framer Motion for results entrance, confidence bar, escalation pulse
+
+### 5. Eval harness
+
+`eval/run-eval.mjs` scores the engine against 8 labeled test cases from `eval/cases.json`. Run with `npm run eval`.
+
+**Score: Urgency 8/8 · Category 8/8** (up from ~3/8 with the old inverted urgency rules on the provided test set).
 
 ## Example Test Messages
 
-Try analyzing these messages to see how the triage system works:
+Try analyzing these messages:
 
-### Example 1: Production Issue
-```
-Our production server is down
-```
-
-### Example 2: Customer Feedback
-```
-Hi there! I just wanted to say thank you for your amazing customer service. I've been using your product for three years now and I'm really happy with it. Keep up the great work!
-```
-
-### Example 3: Feature Request
-```
-I would love to see a dark mode option in the app. It would be much easier on my eyes during night time usage.
-```
-
-### Example 4: Payment Issue
-```
-I tried to update my payment method but the page keeps loading forever. Is this a known issue?
-```
-
-### Example 5: Billing Question
-```
-Can I upgrade my subscription to the pro plan?
-```
-
-### Example 6: Technical Support
-```
-The dashboard won't load when I try to access it. I've tried refreshing but it keeps timing out.
-```
+- `Our production server is down` → Technical Problem, High
+- `Thank you for your amazing customer service!` → Positive Feedback, Low
+- `Can you add a dark mode feature?` → Feature Request, Low
+- `My payment failed and I can't access the dashboard` → Billing Issue, High
+- `What are your business hours?` → General Inquiry, Low
 
 ## Security Note
 
-⚠️ **Warning**: This application exposes the Groq API key in the browser (using `dangerouslyAllowBrowser: true`). This is acceptable for local development only but should **NEVER** be done in production. In a real application, API calls should be made from a secure backend server.
+⚠️ **Warning**: This application exposes the Groq API key in the browser (`dangerouslyAllowBrowser: true`). This is acceptable for local development only but should **never** be done in production.
+
+## Next Steps
+
+- **Serverless proxy**: Deploy a single Vercel/Netlify serverless function to hold the Groq API key server-side — the real production security fix.
+- **Shared persistence + routing**: Move from per-browser localStorage to Supabase/Postgres so triage is a team tool with actual agent/queue routing.
+- **Feedback loop**: Agent overrides captured in history become training/eval data — the flywheel that improves triage over time.
 
 ## Why Groq?
 
-- ✅ **Completely Free** - No credit card required
-- ✅ **Fast Inference** - Groq's LPU technology is incredibly fast
-- ✅ **Generous Limits** - ~14,400 requests/day on free tier
-- ✅ **High Quality** - Llama 3.3 70B performs excellently
-- ✅ **Easy Signup** - Get started in minutes at https://console.groq.com
+- Completely free — no credit card required
+- Fast inference via Groq LPU
+- Generous limits (~14,400 requests/day on free tier)
+- High quality with Llama 3.3 70B
+- Easy signup at https://console.groq.com
 
 ## License
 
