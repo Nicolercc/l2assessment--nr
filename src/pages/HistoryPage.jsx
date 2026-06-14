@@ -1,27 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import UrgencyTag from '../components/UrgencyTag'
+import { readHistory, writeHistory } from '../utils/storage'
 
 function HistoryPage() {
-  const [history, setHistory] = useState([])
+  const [history, setHistory] = useState(() => readHistory())
   const [filter, setFilter] = useState('all')
   const [expandedTimestamp, setExpandedTimestamp] = useState(null)
 
-  useEffect(() => {
-    loadHistory()
-  }, [])
-
-  const loadHistory = () => {
-    const savedHistory = JSON.parse(localStorage.getItem('triageHistory') || '[]')
-    setHistory(savedHistory)
-  }
-
   const clearHistory = () => {
     if (window.confirm('Are you sure you want to clear all history?')) {
-      localStorage.setItem('triageHistory', '[]')
+      writeHistory([])
       setHistory([])
       setExpandedTimestamp(null)
+    }
+  }
+
+  const toggleExpanded = (timestamp) => {
+    setExpandedTimestamp(expandedTimestamp === timestamp ? null : timestamp)
+  }
+
+  const handleRowKeyDown = (e, timestamp) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      toggleExpanded(timestamp)
     }
   }
 
@@ -103,10 +106,12 @@ function HistoryPage() {
               className="bg-surface rounded-card shadow-card border border-line overflow-hidden"
             >
               <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={expandedTimestamp === item.timestamp}
                 className="p-4 cursor-pointer hover:bg-paper/50 transition-colors"
-                onClick={() => setExpandedTimestamp(
-                  expandedTimestamp === item.timestamp ? null : item.timestamp
-                )}
+                onClick={() => toggleExpanded(item.timestamp)}
+                onKeyDown={(e) => handleRowKeyDown(e, item.timestamp)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

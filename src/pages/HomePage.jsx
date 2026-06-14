@@ -1,23 +1,22 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion as Motion } from 'framer-motion'
 import UrgencyTag from '../components/UrgencyTag'
+import { readHistory, setExampleMessage } from '../utils/storage'
 
 function HomePage() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ total: 0, today: 0 })
-  const [recentActivity, setRecentActivity] = useState([])
-
-  useEffect(() => {
-    const history = JSON.parse(localStorage.getItem('triageHistory') || '[]')
+  const [{ stats, recentActivity }] = useState(() => {
+    const history = readHistory()
     const today = new Date().toDateString()
     const todayCount = history.filter(item =>
       new Date(item.timestamp).toDateString() === today
     ).length
-
-    setStats({ total: history.length, today: todayCount })
-    setRecentActivity(history.slice(-3).reverse())
-  }, [])
+    return {
+      stats: { total: history.length, today: todayCount },
+      recentActivity: history.slice(-3).reverse(),
+    }
+  })
 
   const tryExample = () => {
     const examples = [
@@ -26,7 +25,7 @@ function HomePage() {
       "Can you add a dark mode feature?",
     ]
     const random = examples[Math.floor(Math.random() * examples.length)]
-    localStorage.setItem('exampleMessage', random)
+    setExampleMessage(random)
     navigate('/analyze')
   }
 
@@ -58,7 +57,7 @@ function HomePage() {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <motion.div whileHover={{ y: -2 }}>
+          <Motion.div whileHover={{ y: -2 }}>
             <Link
               to="/analyze"
               className="block bg-brand text-white rounded-card shadow-card p-6 hover:bg-brand-600 transition-colors"
@@ -69,9 +68,9 @@ function HomePage() {
               <div className="font-semibold mb-1">Analyze Message</div>
               <div className="text-sm text-white/80">Triage a new customer message</div>
             </Link>
-          </motion.div>
+          </Motion.div>
 
-          <motion.div whileHover={{ y: -2 }}>
+          <Motion.div whileHover={{ y: -2 }}>
             <Link
               to="/history"
               className="block bg-surface rounded-card shadow-card border border-line p-6 hover:border-brand/30 transition-colors"
@@ -82,9 +81,9 @@ function HomePage() {
               <div className="font-semibold text-ink mb-1">View History</div>
               <div className="text-sm text-muted">See past analyses</div>
             </Link>
-          </motion.div>
+          </Motion.div>
 
-          <motion.div whileHover={{ y: -2 }}>
+          <Motion.div whileHover={{ y: -2 }}>
             <button
               onClick={tryExample}
               className="w-full text-left bg-surface rounded-card shadow-card border border-line p-6 hover:border-brand/30 transition-colors"
@@ -95,7 +94,7 @@ function HomePage() {
               <div className="font-semibold text-ink mb-1">Try Example</div>
               <div className="text-sm text-muted">Use a sample message</div>
             </button>
-          </motion.div>
+          </Motion.div>
         </div>
 
         {recentActivity.length > 0 ? (
